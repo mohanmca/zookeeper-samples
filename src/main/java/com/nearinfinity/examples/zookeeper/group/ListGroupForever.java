@@ -5,18 +5,22 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import com.nearinfinity.examples.zookeeper.util.ConnectionHelper;
+import com.nearinfinity.examples.zookeeper.util.MoreZKPaths;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ListGroupForever {
 
-    private ZooKeeper _zooKeeper;
-    private Semaphore _semaphore = new Semaphore(1);
+    private static final Logger LOG = LoggerFactory.getLogger(ListGroupForever.class);
+
+    private final ZooKeeper zooKeeper;
+    private final Semaphore semaphore = new Semaphore(1);
 
     public ListGroupForever(ZooKeeper zooKeeper) {
-        _zooKeeper = zooKeeper;
+        this.zooKeeper = zooKeeper;
     }
 
     public static void main(String[] args) throws Exception {
@@ -24,31 +28,29 @@ public class ListGroupForever {
         new ListGroupForever(zk).listForever(args[1]);
     }
 
+    @SuppressWarnings({"squid:S2189", "InfiniteLoopStatement"})
     public void listForever(String groupName) throws KeeperException, InterruptedException {
-        _semaphore.acquire();
+        semaphore.acquire();
         while (true) {
             list(groupName);
-            _semaphore.acquire();
+            semaphore.acquire();
         }
     }
 
     private void list(String groupName) throws KeeperException, InterruptedException {
-        String path = "/" + groupName;
+        String path = MoreZKPaths.makeAbsolutePath(groupName);
 
-        List<String> children = _zooKeeper.getChildren(path, new Watcher() {
-            @Override
-            public void process(WatchedEvent event) {
-                if (event.getType() == Event.EventType.NodeChildrenChanged) {
-                    _semaphore.release();
-                }
+        List<String> children = zooKeeper.getChildren(path, event -> {
+            if (event.getType() == Watcher.Event.EventType.NodeChildrenChanged) {
+                semaphore.release();
             }
         });
         if (children.isEmpty()) {
-            System.out.printf("No members in group %s\n", groupName);
+            LOG.info("No members in group {}", groupName);
             return;
         }
         Collections.sort(children);
-        System.out.println(children);
-        System.out.println("--------------------");
+        LOG.info("{}", children);
+        LOG.info("--------------------");
     }
 }

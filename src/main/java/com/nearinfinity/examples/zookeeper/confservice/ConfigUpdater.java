@@ -4,27 +4,33 @@ import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import com.nearinfinity.examples.zookeeper.util.MoreZKPaths;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConfigUpdater {
 
-    public static final String PATH = "/config";
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigUpdater.class);
 
-    private ActiveKeyValueStore _store;
-    private Random _random = new Random();
+    public static final String PATH = MoreZKPaths.makeAbsolutePath("config");
+
+    private final ActiveKeyValueStore store;
+    private final Random random = new Random();
 
     public ConfigUpdater(String hosts) throws IOException, InterruptedException {
-        _store = new ActiveKeyValueStore();
-        _store.connect(hosts);
+        store = new ActiveKeyValueStore();
+        store.connect(hosts);
     }
 
+    @SuppressWarnings("squid:S2189")
     public void run() throws InterruptedException, KeeperException {
         //noinspection InfiniteLoopStatement
         while (true) {
-            String value = _random.nextInt(100) + "";
-            _store.write(PATH, value);
-            System.out.printf("Set %s to %s\n", PATH, value);
-            TimeUnit.SECONDS.sleep(_random.nextInt(10));
+            int value = random.nextInt(100);
+            store.write(PATH, Integer.toString(value));
+            LOG.info("Set {} to {}", PATH, value);
+            TimeUnit.SECONDS.sleep(random.nextInt(10));
         }
     }
 

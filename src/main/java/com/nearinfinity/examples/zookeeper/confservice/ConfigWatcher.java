@@ -5,35 +5,37 @@ import java.io.IOException;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConfigWatcher implements Watcher {
 
-    private ActiveKeyValueStore _store;
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigWatcher.class);
+
+    private final ActiveKeyValueStore store;
 
     public ConfigWatcher(String hosts) throws InterruptedException, IOException {
-        _store = new ActiveKeyValueStore();
-        _store.connect(hosts);
+        store = new ActiveKeyValueStore();
+        store.connect(hosts);
     }
 
     public void displayConfig() throws InterruptedException, KeeperException {
-        String value = _store.read(ConfigUpdater.PATH, this);
-        System.out.printf("Read %s as %s\n", ConfigUpdater.PATH, value);
+        String value = store.read(ConfigUpdater.PATH, this);
+        LOG.info("Read {} as {}", ConfigUpdater.PATH, value);
     }
 
 
     @Override
     public void process(WatchedEvent event) {
-        System.out.printf("Process incoming event: %s\n", event.toString());
+        LOG.info("Process incoming event: {}", event);
         if (event.getType() == Event.EventType.NodeDataChanged) {
             try {
                 displayConfig();
-            }
-            catch (InterruptedException e) {
-                System.err.println("Interrupted. Exiting");
+            } catch (InterruptedException e) {
+                LOG.error("Interrupted. Exiting", e);
                 Thread.currentThread().interrupt();
-            }
-            catch (KeeperException e) {
-                System.err.printf("KeeperException: %s. Exiting.\n", e);
+            } catch (KeeperException e) {
+                LOG.error("KeeperException: {}", e.code(), e);
             }
         }
     }

@@ -10,13 +10,13 @@ import org.apache.zookeeper.data.ACL;
 
 public class DistributedOperationExecutor {
 
-    private ZooKeeper _zk;
+    private final ZooKeeper zk;
 
     public DistributedOperationExecutor(ZooKeeper zk) {
-        _zk = zk;
+        this.zk = zk;
     }
 
-    public static final List<ACL> DEFAULT_ACL = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+    private static final List<ACL> DEFAULT_ACL = ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
     public <T> T withLock(String name, String lockPath, DistributedOperation<T> op)
             throws InterruptedException, KeeperException {
@@ -42,7 +42,7 @@ public class DistributedOperationExecutor {
 
     private <T> T withLockInternal(String name, String lockPath, List<ACL> acl, DistributedOperation<T> op)
             throws InterruptedException, KeeperException {
-        BlockingWriteLock lock = new BlockingWriteLock(name, _zk, lockPath, acl);
+        BlockingWriteLock lock = new BlockingWriteLock(name, zk, lockPath, acl);
         try {
             lock.lock();
             return op.execute();
@@ -54,13 +54,13 @@ public class DistributedOperationExecutor {
     private <T> DistributedOperationResult<T> withLockInternal(String name, String lockPath, List<ACL> acl,
                                                                DistributedOperation<T> op, long timeout, TimeUnit unit)
             throws InterruptedException, KeeperException {
-        BlockingWriteLock lock = new BlockingWriteLock(name, _zk, lockPath, acl);
+        BlockingWriteLock lock = new BlockingWriteLock(name, zk, lockPath, acl);
         try {
             boolean lockObtained = lock.lock(timeout, unit);
             if (lockObtained) {
-                return new DistributedOperationResult<T>(false, op.execute());
+                return new DistributedOperationResult<>(false, op.execute());
             }
-            return new DistributedOperationResult<T>(true, null);
+            return new DistributedOperationResult<>(true, null);
         } finally {
             lock.unlock();
         }

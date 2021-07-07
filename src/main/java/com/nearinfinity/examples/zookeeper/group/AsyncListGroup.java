@@ -1,13 +1,15 @@
 package com.nearinfinity.examples.zookeeper.group;
 
-import com.nearinfinity.examples.zookeeper.util.ConnectionWatcher;
-import org.apache.zookeeper.AsyncCallback;
-import org.apache.zookeeper.KeeperException;
-
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import com.nearinfinity.examples.zookeeper.util.ConnectionWatcher;
+import com.nearinfinity.examples.zookeeper.util.MoreZKPaths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AsyncListGroup extends ConnectionWatcher {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AsyncListGroup.class);
 
     public static void main(String[] args) throws Exception {
         AsyncListGroup asyncListGroup = new AsyncListGroup();
@@ -16,32 +18,29 @@ public class AsyncListGroup extends ConnectionWatcher {
         asyncListGroup.close();
     }
 
-    public void list(final String groupName) throws KeeperException, InterruptedException {
-        String path = "/" + groupName;
+    public void list(final String groupName) throws InterruptedException {
+        String path = MoreZKPaths.makeAbsolutePath(groupName);
 
         // In real code, you would not use the async API the way it's being used here. You would
         // go off and do other things without blocking like this example does.
         final CountDownLatch latch = new CountDownLatch(1);
         zk.getChildren(path, false,
-                new AsyncCallback.ChildrenCallback() {
-                    @Override
-                    public void processResult(int rc, String path, Object ctx, List<String> children) {
-                        System.out.printf("Called back for path %s with return code %d\n", path, rc);
-                        if (children == null) {
-                            System.out.printf("Group %s does not exist\n", groupName);
-                        } else {
-                            if (children.isEmpty()) {
-                                System.out.printf("No members in group %s\n", groupName);
-                                return;
-                            }
-                            for (String child : children) {
-                                System.out.println(child);
-                            }
+                (rc, path1, ctx, children) -> {
+                    LOG.info("Called back for path {} with return code {}", path1, rc);
+                    if (children == null) {
+                        LOG.info("Group {} does not exist", groupName);
+                    } else {
+                        if (children.isEmpty()) {
+                            LOG.info("No members in group {}", groupName);
+                            return;
                         }
-                        latch.countDown();
+                        for (String child : children) {
+                            LOG.info(child);
+                        }
                     }
+                    latch.countDown();
                 }, null /* optional context object */);
-        System.out.println("Awaiting latch countdown...");
+        LOG.info("Awaiting latch countdown...");
         latch.await();
     }
 

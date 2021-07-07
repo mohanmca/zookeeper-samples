@@ -1,4 +1,4 @@
-/**
+/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,24 +15,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.zookeeper.recipes.lock;
+
+// NOTE:
+// Copied directly from the ZooKeeper lock recipe, and suppressed all warnings
+//https://github.com/apache/zookeeper/blob/cdddda4c55acf29d4e0b2bc8f3de7b5c676e8ffc/zookeeper-recipes/zookeeper-recipes-lock/src/main/java/org/apache/zookeeper/recipes/lock/LockListener.java
 
 /**
  * This class has two methods which are call
- * back methods when a lock is acquired and 
+ * back methods when a lock is acquired and
  * when the lock is released.
- *
  */
 public interface LockListener {
+
     /**
-     * call back called when the lock 
-     * is acquired
+     * call back called when the lock
+     * is acquired.
      */
-    public void lockAcquired();
-    
+    void lockAcquired();
+
     /**
-     * call back called when the lock is 
+     * call back called when the lock is
      * released.
      */
-    public void lockReleased();
+    void lockReleased();
+
 }

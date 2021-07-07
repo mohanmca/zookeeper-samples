@@ -2,14 +2,18 @@ package com.nearinfinity.examples.zookeeper.group;
 
 import java.util.List;
 
-import org.apache.zookeeper.KeeperException;
-
 import com.nearinfinity.examples.zookeeper.util.ConnectionWatcher;
+import com.nearinfinity.examples.zookeeper.util.MoreZKPaths;
+import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DeleteGroup extends ConnectionWatcher {
 
+    private static final Logger LOG = LoggerFactory.getLogger(DeleteGroup.class);
+
     public void delete(String groupName) throws KeeperException, InterruptedException {
-        String path = "/" + groupName;
+        String path = MoreZKPaths.makeAbsolutePath(groupName);
 
         try {
             List<String> children = zk.getChildren(path, false);
@@ -17,10 +21,9 @@ public class DeleteGroup extends ConnectionWatcher {
                 zk.delete(path + "/" + child, -1);
             }
             zk.delete(path, -1);
-            System.out.printf("Deleted group %s at path %s\n", groupName, path);
-        }
-        catch (KeeperException.NoNodeException e) {
-            System.out.printf("Group %s does not exist\n", groupName);
+            LOG.info("Deleted group {} at path {}", groupName, path);
+        } catch (KeeperException.NoNodeException e) {
+            LOG.error("Group {} does not exist", groupName, e);
         }
     }
 
